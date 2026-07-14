@@ -43,12 +43,12 @@ int main()
     // ============================================================
     Mat channels[3], binary;
     split(frame, channels);             // 分离 BGR 通道，channels[0] = 蓝色通道
-    threshold(channels[0], binary, 255, 255, THRESH_BINARY);  // 蓝色通道二值化
+    threshold(channels[0], binary, 220, 255, THRESH_BINARY);  // 蓝色通道二值化
 
     // ============================================================
     // 3. 形态学处理：去除噪点，连通断开的区域
     // ============================================================
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
     morphologyEx(binary, binary, MORPH_OPEN, kernel);   // 开运算：去白噪点
     morphologyEx(binary, binary, MORPH_CLOSE, kernel);  // 闭运算：填充小空洞
 
@@ -65,11 +65,11 @@ int main()
     vector<LightDescriptor> lightInfos;
     for (int i = 0; i < contours.size(); i++) {
         double area = contourArea(contours[i]);
-        // fitEllipse 要求至少 5 个点
+        // minAreaRect 对轮廓点数有要求，至少 5 个点
         if (area < 5 || contours[i].size() < 5)
             continue;
 
-        RotatedRect Light_Rec = fitEllipse(contours[i]);  // 椭圆拟合 → 旋转矩形
+        RotatedRect Light_Rec = minAreaRect(contours[i]);  // 最小外接旋转矩形
 
         // 统一宽高，确保 h >= w，再判断长宽比
         float w = Light_Rec.size.width;
@@ -83,7 +83,7 @@ int main()
     }
 
     // ============================================================
-    // 6. 灯条配对 + 绘制装甲板矩形
+    // 6. 灯条配对 + 由两个灯条中心构造装甲板矩形
     // ============================================================
     for (size_t i = 0; i < lightInfos.size(); i++) {
         for (size_t j = i + 1; j < lightInfos.size(); j++) {
@@ -113,22 +113,43 @@ int main()
                 continue;
             }
 
-            // 计算装甲板中心点
-            Point center = Point(
-                (leftLight.center.x + rightLight.center.x) / 2,
-                (leftLight.center.y + rightLight.center.y) / 2
+            // 计算装甲板中心点：取两个椭圆中心（灯条中心）的中点
+            Point2f center = Point2f(
+                (leftLight.center.x + rightLight.center.x) / 2.0f,
+                (leftLight.center.y + rightLight.center.y) / 2.0f
             );
-            // 用旋转矩形绘制装甲板
-            RotatedRect rect = RotatedRect(
-                center,
-                Size(xGap, meanLen),
-                (leftLight.angle + rightLight.angle) / 2
+
+            // 以两个椭圆中心连线方向作为矩形的长边方向
+            Point2f dir = Point2f(
+                rightLight.center.x - leftLight.center.x,
+                rightLight.center.y - leftLight.center.y
             );
-            Point2f vertices[4];
-            rect.points(vertices);
-            for (int k = 0; k < 4; k++) {
-                line(frame, vertices[k], vertices[(k + 1) % 4], Scalar(0, 0, 255), 2);
+            float dist = cv::norm(dir);
+            if (dist < 1e-5f) {
+                continue;
             }
+            dir *= 1.0f / dist;
+
+            // 垂直于长边方向的向量，用来构造矩形的短边方向
+            Point2f perp(-dir.y, dir.x);
+
+            // 以两个椭圆中心之间的距离作为矩形宽度，两个灯条平均长度作为矩形高度
+            float halfW = xGap / 2.0f;
+            float halfH = meanLen / 2.0f;
+
+            Point2f vertices[4] = {
+                center + halfW * dir + halfH * perp,
+                center - halfW * dir + halfH * perp,
+                center - halfW * dir - halfH * perp,
+                center + halfW * dir - halfH * perp
+            };
+
+            vector<Point> rectPoints;
+            for (int k = 0; k < 4; k++) {
+                rectPoints.push_back(Point(cvRound(vertices[k].x), cvRound(vertices[k].y)));
+            }
+            polylines(frame, rectPoints, true, Scalar(0, 0, 255), 2);
+            circle(frame, Point(cvRound(center.x), cvRound(center.y)), 3, Scalar(255, 0, 0), -1);
         }
     }
 

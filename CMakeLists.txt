@@ -11,6 +11,3 @@ target_link_libraries(try_2 ${OpenCV_LIBS})
 
 add_executable(demo demo/demo.cpp)
 target_link_libraries(demo ${OpenCV_LIBS})
-
-add_executable(demo_0 demo/demo_0.cpp)
-target_link_libraries(demo_0 ${OpenCV_LIBS})
