@@ -1,5 +1,0 @@
-/home/jno/Desktop/BKD2026培训/opencv/build/CMakeFiles/try_1.dir
-/home/jno/Desktop/BKD2026培训/opencv/build/CMakeFiles/try_2.dir
-/home/jno/Desktop/BKD2026培训/opencv/build/CMakeFiles/demo.dir
-/home/jno/Desktop/BKD2026培训/opencv/build/CMakeFiles/edit_cache.dir
-/home/jno/Desktop/BKD2026培训/opencv/build/CMakeFiles/rebuild_cache.dir
