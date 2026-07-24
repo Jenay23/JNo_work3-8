@@ -28,9 +28,7 @@ std::vector<Eigen::VectorXd> read_armor_data(const std::string & path)
       std::getline(ss, token, ',');
       z(i) = std::stod(token);
     }
-    if (data.empty() || z != data.back()) {
-      data.push_back(z);
-    }
+    data.push_back(z);
   }
   return data;
 }

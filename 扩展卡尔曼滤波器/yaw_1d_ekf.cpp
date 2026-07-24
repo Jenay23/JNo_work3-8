@@ -27,9 +27,7 @@ std::vector<double> read_yaw_data(const std::string & path)
       std::getline(ss, token, ',');
     }
     double yaw = std::stod(token);
-    if (data.empty() || yaw != data.back()) {
-      data.push_back(yaw);
-    }
+    data.push_back(yaw);
   }
   return data;
 }
