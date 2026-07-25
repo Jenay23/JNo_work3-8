@@ -23,9 +23,10 @@ std::vector<double> read_yaw_data(const std::string & path)
     }
     std::stringstream ss(line);
     std::string token;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       std::getline(ss, token, ',');
     }
+    std::getline(ss, token, ',');
     double yaw = std::stod(token);
     data.push_back(yaw);
   }
@@ -52,7 +53,7 @@ int main()
   H(0, 1) = 0.0;
 
   Eigen::MatrixXd Q(2, 2);
-  Q(0, 0) = 0.0001;
+  Q(0, 0) = 0.0002;
   Q(0, 1) = 0.0;
   Q(1, 0) = 0.0;
   Q(1, 1) = 0.00001;
@@ -92,6 +93,7 @@ int main()
 
   for (int i = 0; i < static_cast<int>(yaw_obs.size()); i++) {
     double z = yaw_obs[i];
+
     auto f = [&](const Eigen::VectorXd & x) {
       Eigen::VectorXd x_pred(2);
       x_pred(0) = F(0, 0) * x(0) + F(0, 1) * x(1);
@@ -99,22 +101,14 @@ int main()
       x_pred(0) = std::atan2(std::sin(x_pred(0)), std::cos(x_pred(0)));
       return x_pred;
     };
+
     ekf.predict(F, Q, f);
 
     Eigen::VectorXd z_vec(1);
     z_vec(0) = z;
 
-    double yaw_res = z - ekf.x(0);
-    if (std::abs(yaw_res) > M_PI_2) {
-      if (yaw_res > 0) {
-        z_vec(0) = z_vec(0) - M_PI;
-      } else {
-        z_vec(0) = z_vec(0) + M_PI;
-      }
-      z_vec(0) = std::atan2(std::sin(z_vec(0)), std::cos(z_vec(0)));
-    }
-
     ekf.update(z_vec, H, R, z_subtract);
+
     filtered.push_back(ekf.x(0));
   }
 
