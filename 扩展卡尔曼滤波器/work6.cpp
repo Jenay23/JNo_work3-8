@@ -107,16 +107,6 @@ int main()
     };
     ekf.predict(F, Q, f);
 
-    double yaw_res = z(3) - ekf.x(3);
-    if (std::abs(yaw_res) > M_PI_2) {
-      if (yaw_res > 0) {
-        z(3) = z(3) - M_PI;
-      } else {
-        z(3) = z(3) + M_PI;
-      }
-      z(3) = std::atan2(std::sin(z(3)), std::cos(z(3)));
-    }
-
     ekf.update(z, H, R, z_subtract);
     filtered.push_back(ekf.x);
   }
